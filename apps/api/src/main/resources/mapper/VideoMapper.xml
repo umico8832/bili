@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.bili.api.mapper.VideoMapper">
+
+    <!--
+        视频 VO 结果映射（嵌套结构，与前端 Video TypeScript 接口对齐）
+
+        前端 Video 接口：
+          id, title, cover, description, durationSec,
+          playCount, danmakuCount, likeCount, publishedAt,
+          author: { id, nickname, avatar, signature, verified }
+          category: { id, name, parentId }
+    -->
+    <resultMap id="VideoVOMap" type="com.bili.api.dto.VideoVO">
+        <!-- 主字段 -->
+        <result column="vid"          property="id"/>
+        <result column="title"        property="title"/>
+        <result column="cover"        property="cover"/>
+        <result column="description"  property="description"/>
+        <result column="duration_sec" property="durationSec"/>
+        <result column="play_count"   property="playCount"/>
+        <result column="danmaku_count" property="danmakuCount"/>
+        <result column="like_count"   property="likeCount"/>
+        <result column="published_at" property="publishedAt"/>
+
+        <!-- 作者 author（嵌套对象） -->
+        <association property="author" javaType="com.bili.api.dto.VideoVO$AuthorDTO">
+            <result column="author_id"        property="id"/>
+            <result column="author_nickname"  property="nickname"/>
+            <result column="author_avatar"    property="avatar"/>
+            <result column="author_signature" property="signature"/>
+            <result column="author_verified"  property="verified"/>
+        </association>
+
+        <!-- 分区 category（嵌套对象） -->
+        <association property="category" javaType="com.bili.api.dto.VideoVO$CategoryDTO">
+            <result column="category_id"   property="id"/>
+            <result column="category_name" property="name"/>
+        </association>
+    </resultMap>
+
+    <!--
+        分页查询视频列表（LEFT JOIN user 获取作者信息）
+        MyBatis-Plus 分页插件自动添加 LIMIT / OFFSET
+    -->
+    <select id="pageVideoVO" resultMap="VideoVOMap">
+        SELECT
+            CAST(v.id AS CHAR)        AS vid,
+            v.title,
+            v.cover,
+            v.description,
+            v.duration_sec,
+            v.play_count,
+            v.danmaku_count,
+            v.like_count,
+            v.published_at,
+            v.category_id,
+            v.category_name,
+            CAST(u.id AS CHAR)        AS author_id,
+            u.nickname                AS author_nickname,
+            u.avatar                  AS author_avatar,
+            u.signature               AS author_signature,
+            u.verified                AS author_verified
+        FROM video v
+                 LEFT JOIN `user` u ON u.id = v.author_id AND u.deleted = 0
+        WHERE v.deleted = 0
+          AND v.status  = 1
+          <if test="categoryId != null">
+              AND v.category_id = #{categoryId}
+          </if>
+          <if test="keyword != null and keyword != ''">
+              AND (
+                  v.title LIKE CONCAT('%', #{keyword}, '%')
+                  OR v.description LIKE CONCAT('%', #{keyword}, '%')
+              )
+          </if>
+        ORDER BY v.published_at DESC
+    </select>
+
+</mapper>

@@ -1,0 +1,54 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: bili-api
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/bili?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # Jackson 全局序列化配置
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+
+  # 文件上传大小限制（单个分片最大 10MB，请求体最大 10MB）
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+mybatis-plus:
+  configuration:
+    # 驼峰命名映射：DB 下划线 -> Java camelCase
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      # 主键策略：雪花 ID（字符串）
+      id-type: assign_id
+      # 逻辑删除字段
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  # Mapper XML 扫描路径
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.bili.api.entity
+
+# 文件上传配置
+upload:
+  # 上传根目录（相对于项目运行目录）
+  root-dir: uploads
+  # 单个分片最大大小（5MB）
+  chunk-size: 5242880
+
+logging:
+  level:
+    com.bili.api.mapper: debug
